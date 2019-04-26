@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Game</title>
+</head>
+<body>
+<script src="./js/three.js"></script>
+<script src="./js/OrbitControls.js"></script>
+<script src="./js/LoaderSupport.js"></script>
+<script src="./js/MTLLoader.js"></script>
+<script src="./js/OBJLoader.js"></script>
+<div id="TutContainer"></div>
+<script>
+
+    var velocity;
+    var prevTime;
+    var currTime;
+    var sceneWidth;
+    var sceneHeight;
+    var camera;
+    var renderer;
+    var ballGeometry;
+    var ballMaterial;
+    var ball;
+    var ambientLight;
+    var asteroids = [];
+    var cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
+    var cubeMaterial = new THREE.MeshBasicMaterial({color: 0xff0000});
+    var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+    function createScene() {
+        velocity = 0;
+        prevTime = new Date().getTime();
+        sceneWidth = window.innerWidth;
+        sceneHeight = window.innerHeight;
+        scene = new THREE.Scene();//the 3d scene
+        //scene.fog = new THREE.FogExp2(0xf0fff0, 0.14);
+        camera = new THREE.PerspectiveCamera(60, sceneWidth / sceneHeight, 0.1, 1000);//perspective camera
+        camera.position.set(0, 3, -20);
+        camera.lookAt(0, 0, 0);
+        renderer = new THREE.WebGLRenderer();//renderer with transparent backdrop
+        renderer.setClearColor(0xfffafa, 1);
+        renderer.setSize(sceneWidth, sceneHeight);
+        document.body.appendChild(renderer.domElement);
+        orbitControl = new THREE.OrbitControls(camera, renderer.domElement);
+        ambientLight = new THREE.AmbientLight("#fff");
+        scene.add(ambientLight);
+        window.addEventListener('keydown', Keyboard, false);
+        var callbackOnLoad = function (event) {
+            scene.add(event.detail.loaderRootNode);
+        };
+// load a resource from provided URL synchronously
+
+        new THREE.MTLLoader()
+            .setPath('models/') //for the material
+            .load('A2.mtl', function (materials) { //pass the material to the function that will load the object
+
+                materials.preload(); //idk what this does but don't leave it out
+
+                new THREE.OBJLoader()
+                    .setMaterials(materials)
+                    .setPath('models//') //for the object
+                    .load('A2.obj', function (object) {
+
+                        scene.add(object);
+                    });
+
+            });
+    }
+
+    function setAsteroids() {
+        for (i = 0; i < 10; ++i) {
+            rock = cube.clone();
+            rock.position.set((Math.random() - 0.5) * 15, (Math.random() - 0.5) * 15, (Math.random()) * 15 + 2);
+            console.log(rock.position)
+            rock.scale.set(Math.random() * 2, Math.random() * 2, Math.random() * 2);
+            asteroids.push(rock)
+        }
+    }
+
+    function Keyboard() {
+        if (event.keyCode == 32) {
+            velocity = 9.8;
+        }
+    }
+
+    function render() {
+        renderer.render(scene, camera);//draw
+    }
+
+    function update() {
+        currTime = new Date().getTime();
+        if (velocity != 0 || ball.position.y != 0) {
+            t = (currTime - prevTime) / 500
+            ball.position.y += velocity * t + 0.5 * -(9.8) * t * t;
+            velocity += -9.8 * t;
+        }
+        if (ball.position.y <= 0) {
+            velocity = 0;
+            ball.position.y = 0;
+        }
+        prevTime = currTime;
+    }
+
+    function onWindowResize() {
+        //resize & align
+        sceneHeight = window.innerHeight;
+        sceneWidth = window.innerWidth;
+        renderer.setSize(sceneWidth, sceneHeight);
+        camera.aspect = sceneWidth / sceneHeight;
+        camera.updateProjectionMatrix();
+    }
+
+    function GameLoop() {
+        requestAnimationFrame(GameLoop);
+        render();
+        update();
+    }
+
+    createScene();
+    GameLoop();
+</script>
+</body>
+</html>

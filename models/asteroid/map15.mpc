@@ -1,0 +1,17 @@
+id=MagickCache
+magick-signature=1951341353
+class=DirectClass  colors=0  alpha-trait=Blend
+number-channels=4  number-meta-channels=0
+columns=512  rows=512 depth=8
+colorspace=sRGB
+compression=RLE  quality=0
+page=512x512+0+0
+rendering-intent=Perceptual
+gamma=0.454545
+red-primary=0.64,0.33  green-primary=0.3,0.6  blue-primary=0.15,0.06
+white-point=0.3127,0.329
+orientation=BottomLeft
+date:create=2019-04-23T13:19:09-07:00
+date:modify=2019-04-23T13:19:10-07:00
+
+:
