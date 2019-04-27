@@ -10,78 +10,204 @@
 <script src="./js/LoaderSupport.js"></script>
 <script src="./js/MTLLoader.js"></script>
 <script src="./js/OBJLoader.js"></script>
+<script src="./js/DDSLoader.js"></script>
 <div id="TutContainer"></div>
 <script>
-
     var velocity;
     var prevTime;
-    var currTime;
     var sceneWidth;
     var sceneHeight;
     var camera;
     var renderer;
-    var ballGeometry;
-    var ballMaterial;
-    var ball;
     var ambientLight;
     var asteroids = [];
-    var cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
-    var cubeMaterial = new THREE.MeshBasicMaterial({color: 0xff0000});
-    var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+    var models = [];
+    var spaceShip;
+    frameNumber = 0;
+    var timer;
+    var keyDown = false;
+    keyState = {};
+    var paths = ['models/asteroid1/asteroid1', 'models/asteroid2/asteroid2', 'models/asteroid3/asteroid3'];
+
     function createScene() {
         velocity = 0;
         prevTime = new Date().getTime();
         sceneWidth = window.innerWidth;
         sceneHeight = window.innerHeight;
         scene = new THREE.Scene();//the 3d scene
-        //scene.fog = new THREE.FogExp2(0xf0fff0, 0.14);
+        scene.fog = new THREE.FogExp2('#FFFFFF', 0.02);
         camera = new THREE.PerspectiveCamera(60, sceneWidth / sceneHeight, 0.1, 1000);//perspective camera
-        camera.position.set(0, 3, -20);
-        camera.lookAt(0, 0, 0);
+        camera.position.set(0, 1, 3);
+        ambientLight = new THREE.AmbientLight(0xff0000);
         renderer = new THREE.WebGLRenderer();//renderer with transparent backdrop
-        renderer.setClearColor(0xfffafa, 1);
+        renderer.setClearColor(0xffffff, 1);
         renderer.setSize(sceneWidth, sceneHeight);
         document.body.appendChild(renderer.domElement);
-        orbitControl = new THREE.OrbitControls(camera, renderer.domElement);
+        //orbitControl = new THREE.OrbitControls(camera, renderer.domElement);
         ambientLight = new THREE.AmbientLight("#fff");
         scene.add(ambientLight);
-        window.addEventListener('keydown', Keyboard, false);
-        var callbackOnLoad = function (event) {
-            scene.add(event.detail.loaderRootNode);
+
+        window.addEventListener('keydown', function (e) {
+            keyState[e.which] = true;
+        }, true);
+        window.addEventListener('keyup', function (e) {
+            keyState[e.which] = false;
+        }, true);
+
+
+        loadModels();
+
+    }
+
+    function onDocumentKeyUp(event) {
+        keyDown = false;
+    }
+
+    function loadModels() {
+
+
+        var onProgress = function (xhr) {
+            if (xhr.lengthComputable) {
+                var percentComplete = xhr.loaded / xhr.total * 100;
+                if (percentComplete == 100) {
+                    document.addEventListener("keydown", onDocumentKeyDown, false);
+                    document.addEventListener('keyup', onDocumentKeyUp, false);
+                }
+            }
         };
-// load a resource from provided URL synchronously
-
+        var onError = function () {
+        };
         new THREE.MTLLoader()
-            .setPath('models/') //for the material
-            .load('A2.mtl', function (materials) { //pass the material to the function that will load the object
-
-                materials.preload(); //idk what this does but don't leave it out
-
+            .setPath('models/spaceship/')
+            .load('GHAANON_R1.mtl', function (materials) {
+                materials.preload();
                 new THREE.OBJLoader()
                     .setMaterials(materials)
-                    .setPath('models//') //for the object
-                    .load('A2.obj', function (object) {
-
-                        scene.add(object);
-                    });
-
+                    .setPath('models/spaceship/')
+                    .load('GHAANON_R1.obj', function (object) {
+                        object.scale.set(0.1, 0.1, 0.05);
+                        spaceShip = object;
+                        scene.add(spaceShip);
+                    }, onProgress, onError);
             });
+
+        var onComplete = function (i) {
+            if (i === paths[2]) {
+                for (i = 0; i < 30; ++i) {
+                    addAsteroids(-Math.random() * 100 - 100);
+                }
+            }
+        };
+
+        paths.forEach(path => {
+            new THREE.MTLLoader()
+                .load(path + '.mtl', function (materials) {
+                    materials.preload();
+                    new THREE.OBJLoader()
+                        .setMaterials(materials)
+                        .load(path + '.obj', function (object) {
+                            models.push(object);
+                            onComplete(path);
+                        });
+                });
+        })
     }
 
-    function setAsteroids() {
-        for (i = 0; i < 10; ++i) {
-            rock = cube.clone();
-            rock.position.set((Math.random() - 0.5) * 15, (Math.random() - 0.5) * 15, (Math.random()) * 15 + 2);
-            console.log(rock.position)
-            rock.scale.set(Math.random() * 2, Math.random() * 2, Math.random() * 2);
-            asteroids.push(rock)
+    function isValidPosition(i) {
+        asteroids.forEach(asteroid => {
+            var bbox = new THREE.Box3().setFromObject(asteroid);
+            booleanX = i.x > bbox.min.x && i.x < bbox.max.x;
+            booleanY = i.y > bbox.min.y && i.y < bbox.max.y;
+            if (booleanX && booleanY) {
+                return false;
+            }
+        });
+        return true;
+    }
+
+    function generatePosition() {
+        v = {x: (Math.random() - 0.5) * 40, y: (Math.random() - 0.5) * 30};
+        return v;
+    }
+
+    function addAsteroids(z) {
+        p = generatePosition();
+        if (isValidPosition(p)) {
+            asteroid = models[0].clone();
+            asteroid.position.set(p.x, p.y, z);
+            r = Math.random() / 4 + 0.25;
+            asteroid.scale.set(r, r, r);
+            asteroid.rotation = Math.random() * Math.PI;
+            asteroids.push(asteroid);
+            asteroid.xRotationSpeed = Math.random() / 20;
+            asteroid.yRotationSpeed = Math.random() / 20;
+            asteroid.zRotationSpeed = Math.random() / 20;
+            scene.add(asteroid);
         }
     }
 
-    function Keyboard() {
-        if (event.keyCode == 32) {
-            velocity = 9.8;
+    function handleKeys() {
+        console.log(keyState);
+        if (keyState[39]) {
+            if (spaceShip.position.x > -20) {
+                spaceShip.position.x += 0.1;
+            }
+            if (spaceShip.rotation.z > -1) {
+                spaceShip.rotation.z -= 0.1;
+            }
         }
+        if (keyState[37]) {
+            if (spaceShip.position.x < 20) {
+                spaceShip.position.x -= 0.1;
+            }
+            if (spaceShip.rotation.z < 1) {
+                spaceShip.rotation.z += 0.1;
+            }
+        }
+
+        if (keyState[38]) {
+            if (spaceShip.position.y < 15) {
+                spaceShip.position.y += 0.1;
+            }
+            if (spaceShip.rotation.x < 1) {
+                spaceShip.rotation.x += 0.1;
+            }
+        }
+
+        if (keyState[40]) {
+            if (spaceShip.position.y > 0) {
+                spaceShip.position.y -= 0.1;
+            }
+            if (spaceShip.rotation.x > -1) {
+                spaceShip.rotation.x -= 0.1;
+            }
+        }
+
+        if (!(keyState[39] || keyState[37])) {
+            if (Math.abs(spaceShip.rotation.z) <= 0.1) {
+                spaceShip.rotation.z = 0;
+            }
+            if (spaceShip.rotation.z > 0) {
+                spaceShip.rotation.z -= 0.1;
+            }
+            if (spaceShip.rotation.z < 0) {
+                spaceShip.rotation.z += 0.1;
+            }
+        }
+
+        if (!(keyState[38] || keyState[40])) {
+            if (Math.abs(spaceShip.rotation.x) <= 0.1) {
+                spaceShip.rotation.x = 0;
+            }
+            if (spaceShip.rotation.x > 0) {
+                spaceShip.rotation.x -= 0.1;
+            }
+            if (spaceShip.rotation.x < 0) {
+                spaceShip.rotation.x += 0.1;
+            }
+        }
+
+
     }
 
     function render() {
@@ -89,17 +215,23 @@
     }
 
     function update() {
-        currTime = new Date().getTime();
-        if (velocity != 0 || ball.position.y != 0) {
-            t = (currTime - prevTime) / 500
-            ball.position.y += velocity * t + 0.5 * -(9.8) * t * t;
-            velocity += -9.8 * t;
+        frameNumber++;
+        handleKeys();
+        camera.position.set(spaceShip.position.x, spaceShip.position.y + 1, 3);
+        camera.lookAt(spaceShip.position.x, spaceShip.position.y, spaceShip.position.z);
+        asteroids.forEach(asteroid => {
+            asteroid.rotation.x += asteroid.xRotationSpeed;
+            asteroid.rotation.y += asteroid.yRotationSpeed;
+            asteroid.rotation.z += asteroid.zRotationSpeed;
+            asteroid.position.z += 0.25;
+            if (asteroid.position.z > 10) {
+                asteroids.splice(asteroids.indexOf(asteroid), 1);
+                scene.remove(asteroid);
+            }
+        });
+        if (asteroids.length > 0 && frameNumber % 10 == 0) {
+            addAsteroids(-200);
         }
-        if (ball.position.y <= 0) {
-            velocity = 0;
-            ball.position.y = 0;
-        }
-        prevTime = currTime;
     }
 
     function onWindowResize() {
