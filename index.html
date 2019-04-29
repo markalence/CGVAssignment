@@ -12,8 +12,6 @@
 <script src="./js/OBJLoader.js"></script>
 <div id="TutContainer"></div>
 <script>
-    var velocity;
-    var prevTime;
     var sceneWidth;
     var sceneHeight;
     var camera;
@@ -22,19 +20,52 @@
     var asteroids = [];
     var models = [];
     var spaceShip;
-    frameNumber = 0;
-    var timer;
+    var frameNumber = 0;
     var keyDown = false;
+    var skyBoxGeo;
+    var skybox;
+    var spotLight;
     keyState = {};
     var paths = ['models/asteroid1/asteroid1', 'models/asteroid2/asteroid2', 'models/asteroid3/asteroid3'];
 
+    function skyBox() {
+        skyBoxGeo = new THREE.CubeGeometry(1000, 1000, 1000);
+        var skyBoxMats = [
+            new THREE.MeshBasicMaterial({
+                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/red/bkg2_right1.png'),
+                side: THREE.DoubleSide
+            }),
+            new THREE.MeshBasicMaterial({
+                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/red/bkg2_left2.png'),
+                side: THREE.DoubleSide
+            }),
+            new THREE.MeshBasicMaterial({
+                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/red/bkg2_top3.png'),
+                side: THREE.DoubleSide
+            }),
+            new THREE.MeshBasicMaterial({
+                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/red/bkg2_bottom4.png'),
+                side: THREE.DoubleSide
+            }),
+            new THREE.MeshBasicMaterial({
+                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/red/bkg2_front5.png'),
+                side: THREE.DoubleSide
+            }),
+            new THREE.MeshBasicMaterial({
+                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/red/bkg2_back6.png'),
+                side: THREE.DoubleSide
+            })
+        ];
+        skybox = new THREE.Mesh(skyBoxGeo, skyBoxMats);
+        scene.add(skybox);
+    }
+
+
     function createScene() {
-        velocity = 0;
-        prevTime = new Date().getTime();
         sceneWidth = window.innerWidth;
         sceneHeight = window.innerHeight;
         scene = new THREE.Scene();//the 3d scene
-        scene.fog = new THREE.FogExp2('#FFFFFF', 0.02);
+        scene.fog = new THREE.FogExp2('#000', 0.002);
         camera = new THREE.PerspectiveCamera(60, sceneWidth / sceneHeight, 0.1, 1000);//perspective camera
         camera.position.set(0, 1, 3);
         ambientLight = new THREE.AmbientLight(0xff0000);
@@ -46,6 +77,14 @@
         ambientLight = new THREE.AmbientLight("#fff");
         scene.add(ambientLight);
 
+        spotLight = new THREE.SpotLight("#FFF",1,1000,0.1);
+        spotLight.position.set(-0.9,0,-0.5);
+        spotLight.lookAt(0,0,-20);
+        spotLight.shadowCameraVisible = true;
+        spotLight.shadowDarkness = 0.95;
+        spotLight.intensity = 2;
+        scene.add(spotLight);
+
         window.addEventListener('keydown', function (e) {
             keyState[e.which] = true;
         }, true);
@@ -53,7 +92,7 @@
             keyState[e.which] = false;
         }, true);
 
-
+        skyBox();
         loadModels();
 
     }
@@ -63,8 +102,6 @@
     }
 
     function loadModels() {
-
-
         var onProgress = function (xhr) {
             if (xhr.lengthComputable) {
                 var percentComplete = xhr.loaded / xhr.total * 100;
@@ -140,13 +177,11 @@
             asteroids.push(asteroid);
             asteroid.xRotationSpeed = Math.random() / 20;
             asteroid.yRotationSpeed = Math.random() / 20;
-            asteroid.zRotationSpeed = Math.random() / 20;
             scene.add(asteroid);
         }
     }
 
     function handleKeys() {
-        console.log(keyState);
         if (keyState[39]) {
             if (spaceShip.position.x > -20) {
                 spaceShip.position.x += 0.1;
@@ -216,12 +251,16 @@
     function update() {
         frameNumber++;
         handleKeys();
+        spotLight.position.set(spaceShip.position.x - 0.5, spaceShip.position.y, -0.5);
+        spotLight.target.position.set(spaceShip.position.x-0.5,spaceShip.position.y,-50);
+        spotLight.rotation.set(spaceShip.rotation.x,spaceShip.rotation.y,spaceShip.rotation.z);
+        spotLight.target.rotation.set(spaceShip.rotation);
+        scene.add(spotLight.target);
         camera.position.set(spaceShip.position.x, spaceShip.position.y + 1, 3);
         camera.lookAt(spaceShip.position.x, spaceShip.position.y, spaceShip.position.z);
         asteroids.forEach(asteroid => {
             asteroid.rotation.x += asteroid.xRotationSpeed;
             asteroid.rotation.y += asteroid.yRotationSpeed;
-            asteroid.rotation.z += asteroid.zRotationSpeed;
             asteroid.position.z += 0.25;
             if (asteroid.position.z > 10) {
                 asteroids.splice(asteroids.indexOf(asteroid), 1);
