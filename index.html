@@ -24,8 +24,13 @@
     var keyDown = false;
     var skyBoxGeo;
     var skybox;
+    var collidableMeshList = [];
     var spotLight;
+    var spaceShipLoaded = false;
+    var asteroidsLoaded = true;
     keyState = {};
+    var hits = 0;
+    var cylinder;
     var paths = ['models/asteroid1/asteroid1', 'models/asteroid2/asteroid2', 'models/asteroid3/asteroid3'];
 
     function skyBox() {
@@ -76,20 +81,35 @@
         //orbitControl = new THREE.OrbitControls(camera, renderer.domElement);
         ambientLight = new THREE.AmbientLight("#fff");
         scene.add(ambientLight);
-
-        spotLight = new THREE.SpotLight("#FFF",1,1000,0.1);
-        spotLight.position.set(-0.9,0,-0.5);
-        spotLight.lookAt(0,0,-20);
+        spotLight = new THREE.SpotLight("#FFF", 1, 1000, 0.1);
+        spotLight.position.set(-0.9, 0, -0.5);
+        spotLight.lookAt(0, 0, -20);
         spotLight.shadowCameraVisible = true;
         spotLight.shadowDarkness = 0.95;
         spotLight.intensity = 2;
         scene.add(spotLight);
+        keyState[86] = false;
 
         window.addEventListener('keydown', function (e) {
-            keyState[e.which] = true;
+            if (e.which == 86) {
+                console.log('poes');
+                keyState[e.which] = !keyState[e.which];
+                console.log(keyState[e.which]);
+                if (keyState[e.which] == false) {
+                    camera.position.set(spaceShip.position.x, spaceShip.position.y + 1, 3);
+                    camera.lookAt(spaceShip.position.x, spaceShip.position.y, spaceShip.position.z);
+                } else {
+                    camera.position.set(spaceShip.position.x, spaceShip.position.y, spaceShip.position.z);
+                }
+            } else {
+                keyState[e.which] = true;
+            }
+
         }, true);
         window.addEventListener('keyup', function (e) {
-            keyState[e.which] = false;
+            if (e.which != 86) {
+                keyState[e.which] = false;
+            }
         }, true);
 
         skyBox();
@@ -97,22 +117,8 @@
 
     }
 
-    function onDocumentKeyUp(event) {
-        keyDown = false;
-    }
 
     function loadModels() {
-        var onProgress = function (xhr) {
-            if (xhr.lengthComputable) {
-                var percentComplete = xhr.loaded / xhr.total * 100;
-                if (percentComplete == 100) {
-                    document.addEventListener("keydown", onDocumentKeyDown, false);
-                    document.addEventListener('keyup', onDocumentKeyUp, false);
-                }
-            }
-        };
-        var onError = function () {
-        };
         new THREE.MTLLoader()
             .setPath('models/spaceship/')
             .load('GHAANON_R1.mtl', function (materials) {
@@ -124,11 +130,12 @@
                         object.scale.set(0.1, 0.1, 0.05);
                         spaceShip = object;
                         scene.add(spaceShip);
-                    }, onProgress, onError);
+                        spaceShipLoaded = true;
+                    });
             });
 
         var onComplete = function (i) {
-            if (i === paths[2]) {
+            if (asteroidsLoaded) {
                 for (i = 0; i < 30; ++i) {
                     addAsteroids(-Math.random() * 100 - 100);
                 }
@@ -144,6 +151,7 @@
                         .load(path + '.obj', function (object) {
                             models.push(object);
                             onComplete(path);
+                            asteroidsLoaded = true;
                         });
                 });
         })
@@ -167,6 +175,9 @@
     }
 
     function addAsteroids(z) {
+        if (!asteroidsLoaded) {
+            return;
+        }
         p = generatePosition();
         if (isValidPosition(p)) {
             asteroid = models[0].clone();
@@ -174,9 +185,10 @@
             r = Math.random() / 4 + 0.25;
             asteroid.scale.set(r, r, r);
             asteroid.rotation = Math.random() * Math.PI;
-            asteroids.push(asteroid);
             asteroid.xRotationSpeed = Math.random() / 20;
             asteroid.yRotationSpeed = Math.random() / 20;
+            asteroids.push(asteroid);
+            collidableMeshList.push(asteroid.children[0].clone());
             scene.add(asteroid);
         }
     }
@@ -248,27 +260,58 @@
         renderer.render(scene, camera);//draw
     }
 
+    function detectCollisions() {
+        var bbox = new THREE.Box3().setFromObject(spaceShip);
+        poi = [];
+        for (var i = -0.95; i <= 0.95; i += 0.19) {
+            var originPoint = new THREE.Vector3(i * Math.cos(spaceShip.rotation.z), i * Math.sin(spaceShip.rotation.z), spaceShip.position.z);
+            var directionVector = new THREE.Vector3(originPoint.x, originPoint.y, originPoint.z - 1);
+            var ray = new THREE.Raycaster(originPoint, directionVector.clone().normalize());
+            var collisionResults = ray.intersectObjects(collidableMeshList);
+            if (collisionResults.length > 0) {
+                console.log(collisionResults);
+            }
+
+        }
+
+
+    }
+
     function update() {
         frameNumber++;
-        handleKeys();
-        spotLight.position.set(spaceShip.position.x - 0.5, spaceShip.position.y, -0.5);
-        spotLight.target.position.set(spaceShip.position.x-0.5,spaceShip.position.y,-50);
-        spotLight.rotation.set(spaceShip.rotation.x,spaceShip.rotation.y,spaceShip.rotation.z);
-        spotLight.target.rotation.set(spaceShip.rotation);
-        scene.add(spotLight.target);
-        camera.position.set(spaceShip.position.x, spaceShip.position.y + 1, 3);
-        camera.lookAt(spaceShip.position.x, spaceShip.position.y, spaceShip.position.z);
-        asteroids.forEach(asteroid => {
-            asteroid.rotation.x += asteroid.xRotationSpeed;
-            asteroid.rotation.y += asteroid.yRotationSpeed;
-            asteroid.position.z += 0.25;
-            if (asteroid.position.z > 10) {
-                asteroids.splice(asteroids.indexOf(asteroid), 1);
-                scene.remove(asteroid);
+        if (spaceShipLoaded && asteroidsLoaded) {
+            handleKeys();
+            //detectCollisions();
+            // cylinder.position.set(spaceShip.position.x, spaceShip.position.y, spaceShip.position.z);
+            // cylinder.rotation.z = -spaceShip.rotation.z;
+            // cylinder.rotation.x = +spaceShip.rotation.x + Math.PI / 2;
+            asteroids.forEach(asteroid => {
+                // console.log(asteroid);
+                asteroid.rotation.x += asteroid.xRotationSpeed;
+                asteroid.rotation.y += asteroid.yRotationSpeed;
+                asteroid.position.z += 1;
+                if (asteroid.position.z > 10) {
+                    asteroids.splice(asteroids.indexOf(asteroid), 1);
+                    collidableMeshList.splice(asteroids.indexOf(asteroid), 1);
+                    scene.remove(asteroid);
+                }
+            });
+            if (asteroids.length > 0 && frameNumber % 10 == 0 && asteroidsLoaded) {
+                addAsteroids(-200);
             }
-        });
-        if (asteroids.length > 0 && frameNumber % 10 == 0) {
-            addAsteroids(-200);
+
+            spotLight.position.set(spaceShip.position.x - 0.5, spaceShip.position.y, -0.5);
+            spotLight.target.position.set(spaceShip.position.x - 0.5, spaceShip.position.y, -50);
+            spotLight.rotation.set(spaceShip.rotation.x, spaceShip.rotation.y, spaceShip.rotation.z);
+            spotLight.target.rotation.set(spaceShip.rotation);
+            scene.add(spotLight.target);
+            if(keyState[86]==false) {
+                camera.position.set(spaceShip.position.x, spaceShip.position.y + 1, 3);
+                camera.lookAt(spaceShip.position.x, spaceShip.position.y, spaceShip.position.z);
+            }
+            else{
+                camera.position.set(spaceShip.position.x, spaceShip.position.y,spaceShip.position.z-0.5);
+            }
         }
     }
 
