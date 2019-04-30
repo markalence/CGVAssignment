@@ -239,7 +239,7 @@
 
         var onComplete = function (i) {
             if (asteroidsLoaded) {
-                for (i = 0; i < 30; ++i) {
+                for (i = 0; i < 20; ++i) {
                     addAsteroids(-Math.random() * 100 - 100);
                 }
             }
@@ -395,7 +395,7 @@
                     scene.remove(asteroid);
                 }
             });
-            if (asteroids.length > 0 && frameNumber % 10 == 0 && asteroidsLoaded) {
+            if (asteroids.length > 0 && frameNumber % 6 == 0 && asteroidsLoaded) {
                 addAsteroids(-200);
             }
 

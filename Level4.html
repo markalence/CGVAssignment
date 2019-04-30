@@ -45,27 +45,27 @@
         skyBoxGeo = new THREE.CubeGeometry(1000, 1000, 1000);
         var skyBoxMats = [
             new THREE.MeshBasicMaterial({
-                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/red/bkg2_right1.png'),
+                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/blue/bkg1_right.png'),
                 side: THREE.DoubleSide
             }),
             new THREE.MeshBasicMaterial({
-                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/red/bkg2_left2.png'),
+                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/blue/bkg1_left.png'),
                 side: THREE.DoubleSide
             }),
             new THREE.MeshBasicMaterial({
-                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/red/bkg2_top3.png'),
+                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/blue/bkg1_top.png'),
                 side: THREE.DoubleSide
             }),
             new THREE.MeshBasicMaterial({
-                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/red/bkg2_bottom4.png'),
+                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/blue/bkg1_bottom.png'),
                 side: THREE.DoubleSide
             }),
             new THREE.MeshBasicMaterial({
-                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/red/bkg2_front5.png'),
+                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/blue/bkg1_front1.png'),
                 side: THREE.DoubleSide
             }),
             new THREE.MeshBasicMaterial({
-                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/red/bkg2_back6.png'),
+                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/blue/bkg1_back.png'),
                 side: THREE.DoubleSide
             })
         ];
@@ -389,14 +389,14 @@
             asteroids.forEach(asteroid => {
                 asteroid.rotation.x += asteroid.xRotationSpeed;
                 asteroid.rotation.y += asteroid.yRotationSpeed;
-                asteroid.position.z += 1;
+                asteroid.position.z += 2;
                 if (asteroid.position.z > 10) {
                     asteroids.splice(asteroids.indexOf(asteroid), 1);
                     collidableMeshList.splice(asteroids.indexOf(asteroid), 1);
                     scene.remove(asteroid);
                 }
             });
-            if (asteroids.length > 0 && frameNumber % 10 == 0 && asteroidsLoaded) {
+            if (asteroids.length > 0 && frameNumber % 3 == 0 && asteroidsLoaded) {
                 addAsteroids(-200);
             }
 

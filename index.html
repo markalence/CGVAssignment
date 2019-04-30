@@ -73,7 +73,7 @@
     function createScene() {
 
         //Press 'M' to make the window fullscreen
-        THREEx.FullScreen.bindKey({ charCode : 'm'.charCodeAt(0) });
+        THREEx.FullScreen.bindKey({charCode: 'm'.charCodeAt(0)});
         //Resize window when size of browser changes
 
 
@@ -128,13 +128,14 @@
         loadModels();
 
     }
+
     //Allows to swap between different html files
-    function change_page(level){
+    function change_page(level) {
         window.location.href = level;
     }
 
     //Displays GUI
-    function displayGUI(){
+    function displayGUI() {
         //Sets up GUI variables
         var gui = new dat.GUI();
         var jar;
@@ -153,23 +154,23 @@
 
         //Adding main menu components
         let restart = mainMenu.add(paramaters, 'd').name("Restart level");
-        restart.onChange(function(jar){
+        restart.onChange(function (jar) {
             change_page("index.html");
         });
 
 
-        var levels = mainMenu.add(paramaters, 'q',["Level 1","Level 2","Level 3","Level 4"]).name('Level');
-        levels.onChange(function (jar){
-            if(jar == "Level 1"){
+        var levels = mainMenu.add(paramaters, 'q', ["Level 1", "Level 2", "Level 3", "Level 4"]).name('Level');
+        levels.onChange(function (jar) {
+            if (jar == "Level 1") {
                 change_page("index.html");
             }
-            if(jar == "Level 2"){
+            if (jar == "Level 2") {
                 change_page("Level2.html");
             }
-            if(jar == "Level 3"){
+            if (jar == "Level 3") {
                 change_page("Level3.html");
             }
-            if(jar == "Level 4"){
+            if (jar == "Level 4") {
                 change_page("Level4.html");
             }
         });
@@ -179,21 +180,21 @@
 
         //Adding components
         let viewChange = setting.add(paramaters, 'c').name("1st Person");
-        viewChange.onChange(function(jar){
-            if(jar){
+        viewChange.onChange(function (jar) {
+            if (jar) {
                 keyState[86] = true;
             }
-            if(!jar){
+            if (!jar) {
                 keyState[86] = false;
             }
         });
 
         let fullScreen = setting.add(paramaters, 'c').name("Fullscreen");
-        fullScreen.onChange(function(jar){
-            if(!THREEx.FullScreen.activated()){
+        fullScreen.onChange(function (jar) {
+            if (!THREEx.FullScreen.activated()) {
                 THREEx.FullScreen.request();
             }
-            if(THREEx.FullScreen.activated()){
+            if (THREEx.FullScreen.activated()) {
                 THREEx.FullScreen.cancel();
             }
         });
@@ -204,8 +205,8 @@
         //Adding components
         let shipName = customize.add(paramaters, 's').name('Spaceship name');
 
-        let shipModel = customize.add(paramaters, 'r',["Gunship","Adventurer"]).name("Ship model");
-        shipModel.onChange(function(jar){
+        let shipModel = customize.add(paramaters, 'r', ["Gunship", "Adventurer"]).name("Ship model");
+        shipModel.onChange(function (jar) {
             changeShipModel();
         });
 
@@ -236,7 +237,7 @@
 
         var onComplete = function (i) {
             if (asteroidsLoaded) {
-                for (i = 0; i < 30; ++i) {
+                for (i = 0; i < 10; ++i) {
                     addAsteroids(-Math.random() * 100 - 100);
                 }
             }
@@ -294,17 +295,18 @@
     }
 
     function handleKeys() {
+        console.log(spaceShip.position);
         if (keyState[39]) {
-            if (spaceShip.position.x > -20) {
-                spaceShip.position.x += 0.1;
+            if (spaceShip.position.x < 15) {
+                spaceShip.position.x += 0.2;
             }
             if (spaceShip.rotation.z > -1) {
                 spaceShip.rotation.z -= 0.1;
             }
         }
         if (keyState[37]) {
-            if (spaceShip.position.x < 20) {
-                spaceShip.position.x -= 0.1;
+            if (spaceShip.position.x > -15) {
+                spaceShip.position.x -= 0.2;
             }
             if (spaceShip.rotation.z < 1) {
                 spaceShip.rotation.z += 0.1;
@@ -313,7 +315,7 @@
 
         if (keyState[38]) {
             if (spaceShip.position.y < 15) {
-                spaceShip.position.y += 0.1;
+                spaceShip.position.y += 0.2;
             }
             if (spaceShip.rotation.x < 1) {
                 spaceShip.rotation.x += 0.1;
@@ -321,8 +323,8 @@
         }
 
         if (keyState[40]) {
-            if (spaceShip.position.y > 0) {
-                spaceShip.position.y -= 0.1;
+            if (spaceShip.position.y > -15) {
+                spaceShip.position.y -= 0.2;
             }
             if (spaceShip.rotation.x > -1) {
                 spaceShip.rotation.x -= 0.1;
@@ -401,12 +403,11 @@
             spotLight.rotation.set(spaceShip.rotation.x, spaceShip.rotation.y, spaceShip.rotation.z);
             spotLight.target.rotation.set(spaceShip.rotation);
             scene.add(spotLight.target);
-            if(keyState[86]==false) {
+            if (keyState[86] == false) {
                 camera.position.set(spaceShip.position.x, spaceShip.position.y + 1, 3);
                 camera.lookAt(spaceShip.position.x, spaceShip.position.y, spaceShip.position.z);
-            }
-            else{
-                camera.position.set(spaceShip.position.x, spaceShip.position.y,spaceShip.position.z-0.5);
+            } else {
+                camera.position.set(spaceShip.position.x, spaceShip.position.y, spaceShip.position.z - 0.5);
             }
         }
     }
