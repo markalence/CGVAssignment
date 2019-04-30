@@ -9,8 +9,12 @@
 <script src="./js/OrbitControls.js"></script>
 <script src="./js/LoaderSupport.js"></script>
 <script src="./js/MTLLoader.js"></script>
+<script src="./js/dat.gui.min.js"></script>
+<script src="./js/THREEx.Fullscreen.js"></script>
+<script src="./js/THREEx.WindowResize.js"></script>
 <script src="./js/OBJLoader.js"></script>
 <div id="TutContainer"></div>
+
 <script>
     var sceneWidth;
     var sceneHeight;
@@ -67,6 +71,12 @@
 
 
     function createScene() {
+
+        //Press 'M' to make the window fullscreen
+        THREEx.FullScreen.bindKey({ charCode : 'm'.charCodeAt(0) });
+        //Resize window when size of browser changes
+
+
         sceneWidth = window.innerWidth;
         sceneHeight = window.innerHeight;
         scene = new THREE.Scene();//the 3d scene
@@ -90,9 +100,10 @@
         scene.add(spotLight);
         keyState[86] = false;
 
+        onWindowResize();
+
         window.addEventListener('keydown', function (e) {
             if (e.which == 86) {
-                console.log('poes');
                 keyState[e.which] = !keyState[e.which];
                 console.log(keyState[e.which]);
                 if (keyState[e.which] == false) {
@@ -113,10 +124,99 @@
         }, true);
 
         skyBox();
+        displayGUI();
         loadModels();
 
     }
+    //Allows to swap between different html files
+    function change_page(level){
+        window.location.href = level;
+    }
 
+    //Displays GUI
+    function displayGUI(){
+        //Sets up GUI variables
+        var gui = new dat.GUI();
+        var jar;
+        var paramaters = {
+            a: "",
+            b: "",
+            c: false,
+            d: false,
+            q: "",
+            r: "",
+            s: "",
+        };
+
+        //Setting up main menu folder
+        var mainMenu = gui.addFolder('Main Menu');
+
+        //Adding main menu components
+        let restart = mainMenu.add(paramaters, 'd').name("Restart level");
+        restart.onChange(function(jar){
+            change_page("index.html");
+        });
+
+
+        var levels = mainMenu.add(paramaters, 'q',["Level 1","Level 2","Level 3","Level 4"]).name('Level');
+        levels.onChange(function (jar){
+            if(jar == "Level 1"){
+                change_page("index.html");
+            }
+            if(jar == "Level 2"){
+                change_page("Level2.html");
+            }
+            if(jar == "Level 3"){
+                change_page("Level3.html");
+            }
+            if(jar == "Level 4"){
+                change_page("Level4.html");
+            }
+        });
+
+        //Setting up settings folder
+        var setting = gui.addFolder('Settings');
+
+        //Adding components
+        let viewChange = setting.add(paramaters, 'c').name("1st Person");
+        viewChange.onChange(function(jar){
+            if(jar){
+                keyState[86] = true;
+            }
+            if(!jar){
+                keyState[86] = false;
+            }
+        });
+
+        let fullScreen = setting.add(paramaters, 'c').name("Fullscreen");
+        fullScreen.onChange(function(jar){
+            if(!THREEx.FullScreen.activated()){
+                THREEx.FullScreen.request();
+            }
+            if(THREEx.FullScreen.activated()){
+                THREEx.FullScreen.cancel();
+            }
+        });
+
+        //Setting up customize folder
+        var customize = gui.addFolder('Customize');
+
+        //Adding components
+        let shipName = customize.add(paramaters, 's').name('Spaceship name');
+
+        let shipModel = customize.add(paramaters, 'r',["Gunship","Adventurer"]).name("Ship model");
+        shipModel.onChange(function(jar){
+            changeShipModel();
+        });
+
+
+        gui.close();
+    }
+
+    function unloadScrollBars() {
+        document.documentElement.style.overflow = 'hidden';  // firefox, chrome
+        document.body.scroll = "no"; // ie only
+    }
 
     function loadModels() {
         new THREE.MTLLoader()
@@ -279,14 +379,10 @@
 
     function update() {
         frameNumber++;
+        unloadScrollBars();
         if (spaceShipLoaded && asteroidsLoaded) {
             handleKeys();
-            //detectCollisions();
-            // cylinder.position.set(spaceShip.position.x, spaceShip.position.y, spaceShip.position.z);
-            // cylinder.rotation.z = -spaceShip.rotation.z;
-            // cylinder.rotation.x = +spaceShip.rotation.x + Math.PI / 2;
             asteroids.forEach(asteroid => {
-                // console.log(asteroid);
                 asteroid.rotation.x += asteroid.xRotationSpeed;
                 asteroid.rotation.y += asteroid.yRotationSpeed;
                 asteroid.position.z += 1;
