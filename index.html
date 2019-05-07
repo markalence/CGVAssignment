@@ -13,29 +13,36 @@
 <script src="./js/THREEx.Fullscreen.js"></script>
 <script src="./js/THREEx.WindowResize.js"></script>
 <script src="./js/OBJLoader.js"></script>
+<script src="./js/Asteroid.js"></script>
+<script src="./js/cannon.js"></script>
 <div id="TutContainer"></div>
 
 <script>
     var sceneWidth;
     var sceneHeight;
+    var cube;
+    var abox;
+    var mat;
     var camera;
     var renderer;
+    var lastFrameCollided;
     var ambientLight;
     var asteroids = [];
-    var models = [];
-    var spaceShip;
+    var cworld;
+    var casteroids = [];
+    var spaceship;
     var frameNumber = 0;
-    var keyDown = false;
     var skyBoxGeo;
     var skybox;
-    var collidableMeshList = [];
+    var collided = false;
     var spotLight;
     var spaceShipLoaded = false;
     var asteroidsLoaded = true;
+    var bbox;
+    var sphere;
+    var colls = 0;
+    var lspheres = [];
     keyState = {};
-    var hits = 0;
-    var cylinder;
-    var paths = ['models/asteroid1/asteroid1', 'models/asteroid2/asteroid2', 'models/asteroid3/asteroid3'];
 
     function skyBox() {
         skyBoxGeo = new THREE.CubeGeometry(1000, 1000, 1000);
@@ -69,149 +76,64 @@
         scene.add(skybox);
     }
 
+    function initCannon() {
+        cworld = new CANNON.World();
+        cworld.gravity.set(0, 0, 0);
+        cworld.broadphase = new CANNON.NaiveBroadphase();
+        cworld.solver.iterations = 10;
+    }
 
-    function createScene() {
-
-        //Press 'M' to make the window fullscreen
-        THREEx.FullScreen.bindKey({charCode: 'm'.charCodeAt(0)});
-        //Resize window when size of browser changes
-
-
-        sceneWidth = window.innerWidth;
-        sceneHeight = window.innerHeight;
-        scene = new THREE.Scene();//the 3d scene
-        scene.fog = new THREE.FogExp2('#000', 0.002);
-        camera = new THREE.PerspectiveCamera(60, sceneWidth / sceneHeight, 0.1, 1000);//perspective camera
-        camera.position.set(0, 1, 3);
-        ambientLight = new THREE.AmbientLight(0xff0000);
-        renderer = new THREE.WebGLRenderer();//renderer with transparent backdrop
-        renderer.setClearColor(0xffffff, 1);
-        renderer.setSize(sceneWidth, sceneHeight);
-        document.body.appendChild(renderer.domElement);
-        //orbitControl = new THREE.OrbitControls(camera, renderer.domElement);
+    function initialiseLights() {
         ambientLight = new THREE.AmbientLight("#fff");
         scene.add(ambientLight);
         spotLight = new THREE.SpotLight("#FFF", 1, 1000, 0.1);
         spotLight.position.set(-0.9, 0, -0.5);
         spotLight.lookAt(0, 0, -20);
-        spotLight.shadowCameraVisible = true;
-        spotLight.shadowDarkness = 0.95;
         spotLight.intensity = 2;
         scene.add(spotLight);
-        keyState[86] = false;
+    }
 
-        onWindowResize();
-
+    function addEventListeners() {
         window.addEventListener('keydown', function (e) {
             if (e.which == 86) {
                 keyState[e.which] = !keyState[e.which];
-                console.log(keyState[e.which]);
                 if (keyState[e.which] == false) {
-                    camera.position.set(spaceShip.position.x, spaceShip.position.y + 1, 3);
-                    camera.lookAt(spaceShip.position.x, spaceShip.position.y, spaceShip.position.z);
+                    camera.position.set(spaceship.position.x, spaceship.position.y + 1, 3);
+                    camera.lookAt(spaceship.position.x, spaceship.position.y, spaceship.position.z);
                 } else {
-                    camera.position.set(spaceShip.position.x, spaceShip.position.y, spaceShip.position.z);
+                    camera.position.set(spaceship.position.x, spaceship.position.y, spaceship.position.z);
                 }
             } else {
                 keyState[e.which] = true;
             }
-
         }, true);
         window.addEventListener('keyup', function (e) {
             if (e.which != 86) {
                 keyState[e.which] = false;
             }
         }, true);
+    }
 
+    function createScene() {
+        THREEx.FullScreen.bindKey({charCode: 'm'.charCodeAt(0)});
+        sceneWidth = window.innerWidth;
+        sceneHeight = window.innerHeight;
+        scene = new THREE.Scene();//the 3d scene
+        scene.fog = new THREE.FogExp2('#000', 0.002);
+        camera = new THREE.PerspectiveCamera(60, sceneWidth / sceneHeight, 0.1, 1000);//perspective camera
+        camera.position.set(0, 1, 3);
+        renderer = new THREE.WebGLRenderer();//renderer with transparent backdrop
+        renderer.setClearColor(0xffffff, 1);
+        renderer.setSize(sceneWidth, sceneHeight);
+        document.body.appendChild(renderer.domElement);
+        keyState[86] = false;
+        onWindowResize();
         skyBox();
-        displayGUI();
+        initialiseLights();
+        initCannon();
+        addEventListeners();
         loadModels();
-
-    }
-
-    //Allows to swap between different html files
-    function change_page(level) {
-        window.location.href = level;
-    }
-
-    //Displays GUI
-    function displayGUI() {
-        //Sets up GUI variables
-        var gui = new dat.GUI();
-        var jar;
-        var paramaters = {
-            a: "",
-            b: "",
-            c: false,
-            d: false,
-            q: "",
-            r: "",
-            s: "",
-        };
-
-        //Setting up main menu folder
-        var mainMenu = gui.addFolder('Main Menu');
-
-        //Adding main menu components
-        let restart = mainMenu.add(paramaters, 'd').name("Restart level");
-        restart.onChange(function (jar) {
-            change_page("index.html");
-        });
-
-
-        var levels = mainMenu.add(paramaters, 'q', ["Level 1", "Level 2", "Level 3", "Level 4"]).name('Level');
-        levels.onChange(function (jar) {
-            if (jar == "Level 1") {
-                change_page("index.html");
-            }
-            if (jar == "Level 2") {
-                change_page("Level2.html");
-            }
-            if (jar == "Level 3") {
-                change_page("Level3.html");
-            }
-            if (jar == "Level 4") {
-                change_page("Level4.html");
-            }
-        });
-
-        //Setting up settings folder
-        var setting = gui.addFolder('Settings');
-
-        //Adding components
-        let viewChange = setting.add(paramaters, 'c').name("1st Person");
-        viewChange.onChange(function (jar) {
-            if (jar) {
-                keyState[86] = true;
-            }
-            if (!jar) {
-                keyState[86] = false;
-            }
-        });
-
-        let fullScreen = setting.add(paramaters, 'c').name("Fullscreen");
-        fullScreen.onChange(function (jar) {
-            if (!THREEx.FullScreen.activated()) {
-                THREEx.FullScreen.request();
-            }
-            if (THREEx.FullScreen.activated()) {
-                THREEx.FullScreen.cancel();
-            }
-        });
-
-        //Setting up customize folder
-        var customize = gui.addFolder('Customize');
-
-        //Adding components
-        let shipName = customize.add(paramaters, 's').name('Spaceship name');
-
-        let shipModel = customize.add(paramaters, 'r', ["Gunship", "Adventurer"]).name("Ship model");
-        shipModel.onChange(function (jar) {
-            changeShipModel();
-        });
-
-
-        gui.close();
+        unloadScrollBars();
     }
 
     function unloadScrollBars() {
@@ -229,38 +151,34 @@
                     .setPath('models/spaceship/')
                     .load('GHAANON_R1.obj', function (object) {
                         object.scale.set(0.1, 0.1, 0.05);
-                        spaceShip = object;
-                        scene.add(spaceShip);
+                        spaceship = object;
+                        var box = new THREE.Box3().setFromObject(spaceship);
+                        var shape = new CANNON.Box(new CANNON.Vec3(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z));
+                        bbox = new CANNON.Body({
+                            mass: 10,
+                        });
+                        bbox.addShape(shape);
+                        bbox.addEventListener("collide", function (e) {
+                            collided = true;
+                            lastFrameCollided = frameNumber;
+                        });
+                        abox = new THREE.BoxGeometry(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z);
+                        mat = new THREE.MeshBasicMaterial({color: "#00ff00"});
+                        cube = new THREE.Mesh(abox, mat);
+                        // scene.add(cube);
+                        bbox.collisionResponse = true;
+                        bbox.addShape(shape);
+                        cworld.add(bbox);
+                        scene.add(spaceship);
                         spaceShipLoaded = true;
                     });
             });
-
-        var onComplete = function (i) {
-            if (asteroidsLoaded) {
-                for (i = 0; i < 10; ++i) {
-                    addAsteroids(-Math.random() * 100 - 100);
-                }
-            }
-        };
-
-        paths.forEach(path => {
-            new THREE.MTLLoader()
-                .load(path + '.mtl', function (materials) {
-                    materials.preload();
-                    new THREE.OBJLoader()
-                        .setMaterials(materials)
-                        .load(path + '.obj', function (object) {
-                            models.push(object);
-                            onComplete(path);
-                            asteroidsLoaded = true;
-                        });
-                });
-        })
+        Asteroid.loadPaths();
     }
 
     function isValidPosition(i) {
         asteroids.forEach(asteroid => {
-            var bbox = new THREE.Box3().setFromObject(asteroid);
+            var bbox = new THREE.Box3().setFromObject(asteroid.model);
             booleanX = i.x > bbox.min.x && i.x < bbox.max.x;
             booleanY = i.y > bbox.min.y && i.y < bbox.max.y;
             if (booleanX && booleanY) {
@@ -269,6 +187,68 @@
         });
         return true;
     }
+
+    function handleKeys() {
+        if (keyState[39]) {
+            if (spaceship.position.x < 15) {
+                spaceship.position.x += 0.2;
+            }
+            if (spaceship.rotation.z > -1) {
+                spaceship.rotation.z -= 0.1;
+            }
+        }
+        if (keyState[37]) {
+            if (spaceship.position.x > -15) {
+                spaceship.position.x -= 0.2;
+            }
+            if (spaceship.rotation.z < 1) {
+                spaceship.rotation.z += 0.1;
+            }
+        }
+        if (keyState[38]) {
+            if (spaceship.position.y < 15) {
+                spaceship.position.y += 0.2;
+            }
+            if (spaceship.rotation.x < 1) {
+                spaceship.rotation.x += 0.1;
+            }
+        }
+        if (keyState[40]) {
+            if (spaceship.position.y > -15) {
+                spaceship.position.y -= 0.2;
+            }
+            if (spaceship.rotation.x > -1) {
+                spaceship.rotation.x -= 0.1;
+            }
+        }
+        if (!(keyState[39] || keyState[37])) {
+            if (Math.abs(spaceship.rotation.z) <= 0.1) {
+                spaceship.rotation.z = 0;
+            }
+            if (spaceship.rotation.z > 0) {
+                spaceship.rotation.z -= 0.1;
+            }
+            if (spaceship.rotation.z < 0) {
+                spaceship.rotation.z += 0.1;
+            }
+        }
+        if (!(keyState[38] || keyState[40])) {
+            if (Math.abs(spaceship.rotation.x) <= 0.1) {
+                spaceship.rotation.x = 0;
+            }
+            if (spaceship.rotation.x > 0) {
+                spaceship.rotation.x -= 0.1;
+            }
+            if (spaceship.rotation.x < 0) {
+                spaceship.rotation.x += 0.1;
+            }
+        }
+    }
+
+    function render() {
+        renderer.render(scene, camera);//draw
+    }
+
 
     function generatePosition() {
         v = {x: (Math.random() - 0.5) * 40, y: (Math.random() - 0.5) * 30};
@@ -281,134 +261,95 @@
         }
         p = generatePosition();
         if (isValidPosition(p)) {
-            asteroid = models[0].clone();
-            asteroid.position.set(p.x, p.y, z);
-            r = Math.random() / 4 + 0.25;
-            asteroid.scale.set(r, r, r);
-            asteroid.rotation = Math.random() * Math.PI;
-            asteroid.xRotationSpeed = Math.random() / 20;
-            asteroid.yRotationSpeed = Math.random() / 20;
+            var asteroid = new Asteroid(0, 0.5, p.x, p.y, z);
+            scene.add(asteroid.model);
             asteroids.push(asteroid);
-            collidableMeshList.push(asteroid.children[0].clone());
-            scene.add(asteroid);
+            var shape = new CANNON.Sphere(5.14938 * asteroid.scale);
+            var body = new CANNON.Body({
+                mass: 10,
+            });
+            body.addShape(shape);
+            body.position.copy(asteroid.model.position);
+            body.velocity.set(0, 0, 30);
+            // scene.add(sphere);
+            cworld.add(body);
+            casteroids.push(body);
+
         }
     }
 
-    function handleKeys() {
-        console.log(spaceShip.position);
-        if (keyState[39]) {
-            if (spaceShip.position.x < 15) {
-                spaceShip.position.x += 0.2;
+    function updateAsteroids() {
+        asteroids.forEach(asteroid => {
+            asteroid.model.position.copy(casteroids[asteroids.indexOf(asteroid)].position);
+            asteroid.doRotate();
+            if (asteroid.model.position.z > 10) {
+                cworld.remove(casteroids[asteroids.indexOf(asteroid)]);
+                casteroids.splice(asteroids.indexOf(asteroid), 1);
+                scene.remove(lspheres[asteroids.indexOf(asteroid)]);
+                asteroids.splice(asteroids.indexOf(asteroid), 1);
+                scene.remove(asteroid.model);
             }
-            if (spaceShip.rotation.z > -1) {
-                spaceShip.rotation.z -= 0.1;
-            }
+        });
+        if (asteroids.length >= 0 && frameNumber % 10 == 0 && asteroidsLoaded) {
+            addAsteroids(-200);
         }
-        if (keyState[37]) {
-            if (spaceShip.position.x > -15) {
-                spaceShip.position.x -= 0.2;
-            }
-            if (spaceShip.rotation.z < 1) {
-                spaceShip.rotation.z += 0.1;
-            }
-        }
-
-        if (keyState[38]) {
-            if (spaceShip.position.y < 15) {
-                spaceShip.position.y += 0.2;
-            }
-            if (spaceShip.rotation.x < 1) {
-                spaceShip.rotation.x += 0.1;
-            }
-        }
-
-        if (keyState[40]) {
-            if (spaceShip.position.y > -15) {
-                spaceShip.position.y -= 0.2;
-            }
-            if (spaceShip.rotation.x > -1) {
-                spaceShip.rotation.x -= 0.1;
-            }
-        }
-
-        if (!(keyState[39] || keyState[37])) {
-            if (Math.abs(spaceShip.rotation.z) <= 0.1) {
-                spaceShip.rotation.z = 0;
-            }
-            if (spaceShip.rotation.z > 0) {
-                spaceShip.rotation.z -= 0.1;
-            }
-            if (spaceShip.rotation.z < 0) {
-                spaceShip.rotation.z += 0.1;
-            }
-        }
-
-        if (!(keyState[38] || keyState[40])) {
-            if (Math.abs(spaceShip.rotation.x) <= 0.1) {
-                spaceShip.rotation.x = 0;
-            }
-            if (spaceShip.rotation.x > 0) {
-                spaceShip.rotation.x -= 0.1;
-            }
-            if (spaceShip.rotation.x < 0) {
-                spaceShip.rotation.x += 0.1;
-            }
-        }
-
-
     }
 
-    function render() {
-        renderer.render(scene, camera);//draw
+    function updateLighting() {
+        spotLight.position.set(spaceship.position.x - 0.5, spaceship.position.y, -0.5);
+        spotLight.target.position.set(spaceship.position.x - 0.5, spaceship.position.y, -50);
+        spotLight.rotation.set(spaceship.rotation.x, spaceship.rotation.y, spaceship.rotation.z);
+        spotLight.target.rotation.set(spaceship.rotation);
+        scene.add(spotLight.target);
     }
 
-    function detectCollisions() {
-        var bbox = new THREE.Box3().setFromObject(spaceShip);
-        poi = [];
-        for (var i = -0.95; i <= 0.95; i += 0.19) {
-            var originPoint = new THREE.Vector3(i * Math.cos(spaceShip.rotation.z), i * Math.sin(spaceShip.rotation.z), spaceShip.position.z);
-            var directionVector = new THREE.Vector3(originPoint.x, originPoint.y, originPoint.z - 1);
-            var ray = new THREE.Raycaster(originPoint, directionVector.clone().normalize());
-            var collisionResults = ray.intersectObjects(collidableMeshList);
-            if (collisionResults.length > 0) {
-                console.log(collisionResults);
+    function updatePerspective() {
+        if (keyState[86] == false) {
+            camera.position.set(spaceship.position.x, spaceship.position.y + 1, 3);
+            camera.lookAt(spaceship.position.x, spaceship.position.y, spaceship.position.z);
+        } else {
+            camera.position.set(spaceship.position.x, spaceship.position.y, spaceship.position.z - 0.5);
+        }
+    }
+
+
+    function updateSpaceship() {
+        bbox.velocity.set(0, 0, 0);
+        bbox.position.copy(spaceship.position);
+        cube.quaternion.copy(bbox.quaternion);
+        cube.position.copy(bbox.position);
+        if (collided) {
+            spaceship.quaternion.copy(bbox.quaternion);
+            bbox.angularVelocity.x *= Math.cos((frameNumber - lastFrameCollided) * 0.01);
+            bbox.angularVelocity.y *= Math.cos((frameNumber - lastFrameCollided) * 0.01);
+            bbox.angularVelocity.z *= Math.cos((frameNumber - lastFrameCollided) * 0.01);
+            bbox.quaternion.x *= 0.92;
+            bbox.quaternion.y *= 0.92;
+            bbox.quaternion.z *= 0.92;
+            spaceship.quaternion.copy(bbox.quaternion);
+
+            if (Math.abs(bbox.angularVelocity.x) < 0.001 && Math.abs(bbox.angularVelocity.y) < 0.001 && Math.abs(bbox.angularVelocity.z) < 0.001) {
+                collided = false;
+                bbox.quaternion.set(0,0,0,1);
+                spaceship.quaternion.set(0,0,0,1);
             }
 
+        } else {
+            bbox.quaternion.copy(spaceship.quaternion);
         }
-
-
     }
+
 
     function update() {
         frameNumber++;
-        unloadScrollBars();
-        if (spaceShipLoaded && asteroidsLoaded) {
+        if (spaceShipLoaded) {
             handleKeys();
-            asteroids.forEach(asteroid => {
-                asteroid.rotation.x += asteroid.xRotationSpeed;
-                asteroid.rotation.y += asteroid.yRotationSpeed;
-                asteroid.position.z += 1;
-                if (asteroid.position.z > 10) {
-                    asteroids.splice(asteroids.indexOf(asteroid), 1);
-                    collidableMeshList.splice(asteroids.indexOf(asteroid), 1);
-                    scene.remove(asteroid);
-                }
-            });
-            if (asteroids.length > 0 && frameNumber % 10 == 0 && asteroidsLoaded) {
-                addAsteroids(-200);
-            }
+            updateAsteroids();
+            cworld.step(1 / 60);
+            updateLighting();
+            updateSpaceship();
+            updatePerspective();
 
-            spotLight.position.set(spaceShip.position.x - 0.5, spaceShip.position.y, -0.5);
-            spotLight.target.position.set(spaceShip.position.x - 0.5, spaceShip.position.y, -50);
-            spotLight.rotation.set(spaceShip.rotation.x, spaceShip.rotation.y, spaceShip.rotation.z);
-            spotLight.target.rotation.set(spaceShip.rotation);
-            scene.add(spotLight.target);
-            if (keyState[86] == false) {
-                camera.position.set(spaceShip.position.x, spaceShip.position.y + 1, 3);
-                camera.lookAt(spaceShip.position.x, spaceShip.position.y, spaceShip.position.z);
-            } else {
-                camera.position.set(spaceShip.position.x, spaceShip.position.y, spaceShip.position.z - 0.5);
-            }
         }
     }
 
@@ -424,7 +365,9 @@
     function GameLoop() {
         requestAnimationFrame(GameLoop);
         render();
-        update();
+        if (Asteroid.modelsLoaded) {
+            update();
+        }
     }
 
     createScene();

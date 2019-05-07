@@ -9,14 +9,13 @@
 <script src="./js/OrbitControls.js"></script>
 <script src="./js/LoaderSupport.js"></script>
 <script src="./js/MTLLoader.js"></script>
-<script src="./js/OBJLoader.js"></script>
+<script src="./js/dat.gui.min.js"></script>
 <script src="./js/THREEx.Fullscreen.js"></script>
 <script src="./js/THREEx.WindowResize.js"></script>
-<script src="./js/dat.gui.min.js"></script>
+<script src="./js/OBJLoader.js"></script>
+<script src="./js/Asteroid.js"></script>
+<script src="./js/cannon.js"></script>
 <div id="TutContainer"></div>
-
-
-
 
 <script>
     //Declaring global variables
@@ -28,19 +27,21 @@
     var asteroids = [];
     var models = [];
     var spaceShip;
+    var bbox;
     var frameNumber = 0;
     var keyDown = false;
+    var cworld;
     var skyBoxGeo;
     var skybox;
     var collidableMeshList = [];
     var spotLight;
     var spaceShipLoaded = false;
     var asteroidsLoaded = true;
+    var casteroids = [];
     keyState = {};
-    var hits = 0;
-    var cylinder;
     var paths = ['models/asteroid1/asteroid1', 'models/asteroid2/asteroid2', 'models/asteroid3/asteroid3'];
 
+    // initialises skybox
     function skyBox() {
         skyBoxGeo = new THREE.CubeGeometry(1000, 1000, 1000);
         var skyBoxMats = [
@@ -57,11 +58,11 @@
                 side: THREE.DoubleSide
             }),
             new THREE.MeshBasicMaterial({
-                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/blue/bkg1_bottom.png'),
+                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/blue/bkg1_bot.png'),
                 side: THREE.DoubleSide
             }),
             new THREE.MeshBasicMaterial({
-                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/blue/bkg1_front1.png'),
+                map: new THREE.TextureLoader().load('skyboxes/skybox1/bkg/blue/bkg1_front.png'),
                 side: THREE.DoubleSide
             }),
             new THREE.MeshBasicMaterial({
@@ -75,12 +76,8 @@
 
 
     function createScene() {
-
-        //Press 'M' to make the window fullscreen
-        THREEx.FullScreen.bindKey({ charCode : 'm'.charCodeAt(0) });
-        //Resize window when size of browser changes
-
-
+        Asteroid.loadPaths();
+        THREEx.FullScreen.bindKey({charCode: 'm'.charCodeAt(0)});
         sceneWidth = window.innerWidth;
         sceneHeight = window.innerHeight;
         scene = new THREE.Scene();//the 3d scene
@@ -92,7 +89,6 @@
         renderer.setClearColor(0xffffff, 1);
         renderer.setSize(sceneWidth, sceneHeight);
         document.body.appendChild(renderer.domElement);
-        //orbitControl = new THREE.OrbitControls(camera, renderer.domElement);
         ambientLight = new THREE.AmbientLight("#fff");
         scene.add(ambientLight);
         spotLight = new THREE.SpotLight("#FFF", 1, 1000, 0.1);
@@ -103,9 +99,8 @@
         spotLight.intensity = 2;
         scene.add(spotLight);
         keyState[86] = false;
-
         onWindowResize();
-
+        initCannon();
         window.addEventListener('keydown', function (e) {
             if (e.which == 86) {
                 keyState[e.which] = !keyState[e.which];
@@ -132,13 +127,14 @@
         loadModels();
 
     }
+
     //Allows to swap between different html files
-    function change_page(level){
+    function change_page(level) {
         window.location.href = level;
     }
 
     //Displays GUI
-    function displayGUI(){
+    function displayGUI() {
         //Sets up GUI variables
         var gui = new dat.GUI();
         var jar;
@@ -157,23 +153,23 @@
 
         //Adding main menu components
         let restart = mainMenu.add(paramaters, 'd').name("Restart level");
-        restart.onChange(function(jar){
+        restart.onChange(function (jar) {
             change_page("Level4.html");
         });
 
 
-        var levels = mainMenu.add(paramaters, 'q',["Level 1","Level 2","Level 3","Level 4"]).name('Level');
-        levels.onChange(function (jar){
-            if(jar == "Level 1"){
+        var levels = mainMenu.add(paramaters, 'q', ["Level 1", "Level 2", "Level 3", "Level 4"]).name('Level');
+        levels.onChange(function (jar) {
+            if (jar == "Level 1") {
                 change_page("index.html");
             }
-            if(jar == "Level 2"){
+            if (jar == "Level 2") {
                 change_page("Level2.html");
             }
-            if(jar == "Level 3"){
+            if (jar == "Level 3") {
                 change_page("Level3.html");
             }
-            if(jar == "Level 4"){
+            if (jar == "Level 4") {
                 change_page("Level4.html");
             }
         });
@@ -183,21 +179,21 @@
 
         //Adding components
         let viewChange = setting.add(paramaters, 'c').name("1st Person");
-        viewChange.onChange(function(jar){
-            if(jar){
+        viewChange.onChange(function (jar) {
+            if (jar) {
                 keyState[86] = true;
             }
-            if(!jar){
+            if (!jar) {
                 keyState[86] = false;
             }
         });
 
         let fullScreen = setting.add(paramaters, 'c').name("Fullscreen");
-        fullScreen.onChange(function(jar){
-            if(!THREEx.FullScreen.activated()){
+        fullScreen.onChange(function (jar) {
+            if (!THREEx.FullScreen.activated()) {
                 THREEx.FullScreen.request();
             }
-            if(THREEx.FullScreen.activated()){
+            if (THREEx.FullScreen.activated()) {
                 THREEx.FullScreen.cancel();
             }
         });
@@ -208,8 +204,8 @@
         //Adding components
         let shipName = customize.add(paramaters, 's').name('Spaceship name');
 
-        let shipModel = customize.add(paramaters, 'r',["Gunship","Adventurer"]).name("Ship model");
-        shipModel.onChange(function(jar){
+        let shipModel = customize.add(paramaters, 'r', ["Gunship", "Adventurer"]).name("Ship model");
+        shipModel.onChange(function (jar) {
             changeShipModel();
         });
 
@@ -222,6 +218,7 @@
         document.body.scroll = "no"; // ie only
     }
 
+    //loads spaceship model along with asteroid model.
     function loadModels() {
         new THREE.MTLLoader()
             .setPath('models/spaceship/')
@@ -234,7 +231,16 @@
                         object.scale.set(0.1, 0.1, 0.05);
                         spaceShip = object;
                         scene.add(spaceShip);
+                        var box = new THREE.Box3().setFromObject(spaceShip);
+                        var shape = new CANNON.Box(new CANNON.Vec3(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z));
+                        bbox = new CANNON.Body({
+                            mass: 1,
+                            shape: shape,
+                            type: 1
+                        });
+                        cworld.add(bbox);
                         spaceShipLoaded = true;
+
                     });
             });
 
@@ -261,9 +267,18 @@
         })
     }
 
+    function initCannon() {
+        cworld = new CANNON.World();
+        cworld.gravity.set(0, 0, 0);
+        cworld.broadphase = new CANNON.NaiveBroadphase();
+        cworld.solver.iterations = 10;
+        cworld.defaultContactMaterial.contactEquationStiffness = 1e8;
+        // cworld.defaultContactMaterial.contactEquationRelaxation = 10;
+    }
+
     function isValidPosition(i) {
         asteroids.forEach(asteroid => {
-            var bbox = new THREE.Box3().setFromObject(asteroid);
+            var bbox = new THREE.Box3().setFromObject(asteroid.model);
             booleanX = i.x > bbox.min.x && i.x < bbox.max.x;
             booleanY = i.y > bbox.min.y && i.y < bbox.max.y;
             if (booleanX && booleanY) {
@@ -278,25 +293,31 @@
         return v;
     }
 
+    //adds an asteroid to the scene at the specified z value. Random x and y positions between 0 and 20.
     function addAsteroids(z) {
         if (!asteroidsLoaded) {
             return;
         }
         p = generatePosition();
         if (isValidPosition(p)) {
-            asteroid = models[0].clone();
-            asteroid.position.set(p.x, p.y, z);
-            r = Math.random() / 4 + 0.25;
-            asteroid.scale.set(r, r, r);
-            asteroid.rotation = Math.random() * Math.PI;
-            asteroid.xRotationSpeed = Math.random() / 20;
-            asteroid.yRotationSpeed = Math.random() / 20;
+            var asteroid = new Asteroid(0, 1, p.x, p.y, z);
             asteroids.push(asteroid);
-            collidableMeshList.push(asteroid.children[0].clone());
-            scene.add(asteroid);
+            scene.add(asteroid.model);
+
+            var body = new CANNON.Body({
+                mass: 5
+            });
+            var shape = new CANNON.Sphere(5.14938 * asteroid.scale);
+            body.addShape(shape);
+            body.position.copy(asteroid.model.position);
+            body.velocity.set(0, 0, 30);
+            cworld.add(body);
+            casteroids.push(body);
         }
     }
 
+
+    //rotates and translates spaceship based on keystates
     function handleKeys() {
         if (keyState[39]) {
             if (spaceShip.position.x > -20) {
@@ -364,35 +385,20 @@
         renderer.render(scene, camera);//draw
     }
 
-    function detectCollisions() {
-        var bbox = new THREE.Box3().setFromObject(spaceShip);
-        poi = [];
-        for (var i = -0.95; i <= 0.95; i += 0.19) {
-            var originPoint = new THREE.Vector3(i * Math.cos(spaceShip.rotation.z), i * Math.sin(spaceShip.rotation.z), spaceShip.position.z);
-            var directionVector = new THREE.Vector3(originPoint.x, originPoint.y, originPoint.z - 1);
-            var ray = new THREE.Raycaster(originPoint, directionVector.clone().normalize());
-            var collisionResults = ray.intersectObjects(collidableMeshList);
-            if (collisionResults.length > 0) {
-                console.log(collisionResults);
-            }
-
-        }
-
-
-    }
-
+    //update spaceship position, generate asteroids, and update spotlight position/rotation
     function update() {
         frameNumber++;
+        cworld.step(1/60);
         unloadScrollBars();
         if (spaceShipLoaded && asteroidsLoaded) {
             handleKeys();
+            bbox.position.copy(spaceShip.position);
             asteroids.forEach(asteroid => {
-                asteroid.rotation.x += asteroid.xRotationSpeed;
-                asteroid.rotation.y += asteroid.yRotationSpeed;
-                asteroid.position.z += 2;
-                if (asteroid.position.z > 10) {
+                asteroid.model.position.copy(casteroids[asteroids.indexOf(asteroid)].position);
+                if (asteroid.model.position.z > 10) {
+                    cworld.remove(casteroids[asteroids.indexOf(asteroid)]);
+                    casteroids.splice(asteroids.indexOf(asteroid), 1);
                     asteroids.splice(asteroids.indexOf(asteroid), 1);
-                    collidableMeshList.splice(asteroids.indexOf(asteroid), 1);
                     scene.remove(asteroid);
                 }
             });
@@ -405,12 +411,11 @@
             spotLight.rotation.set(spaceShip.rotation.x, spaceShip.rotation.y, spaceShip.rotation.z);
             spotLight.target.rotation.set(spaceShip.rotation);
             scene.add(spotLight.target);
-            if(keyState[86]==false) {
+            if (keyState[86] == false) {
                 camera.position.set(spaceShip.position.x, spaceShip.position.y + 1, 3);
                 camera.lookAt(spaceShip.position.x, spaceShip.position.y, spaceShip.position.z);
-            }
-            else{
-                camera.position.set(spaceShip.position.x, spaceShip.position.y,spaceShip.position.z-0.5);
+            } else {
+                camera.position.set(spaceShip.position.x, spaceShip.position.y, spaceShip.position.z - 0.5);
             }
         }
     }
