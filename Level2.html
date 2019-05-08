@@ -18,129 +18,110 @@
 
 <script>
 
-    /**
-     * For debugging different kinds of pair collisions
-     */
-    var demo = new CANNON.Demo();
+    /// We start by creating our 3D content. In this case a
+    // very simple spinning cube.
 
-    demo.addScene("Sphere / sphere",function(){
-        var world = setupWorld(demo);
+    // Create scene for 3D content.
+    var scene = new THREE.Scene();
 
-        // Sphere 1
-        var sphereShape = new CANNON.Sphere(1);
-        var b1 = new CANNON.Body({ mass: 5 });
-        b1.addShape(sphereShape);
-        b1.position.set(5,0,0);
-        b1.velocity.set(-5,0,0);
-        b1.linearDamping = 0;
-        world.add(b1);
-        demo.addVisual(b1);
+    // Create shortcuts for window size.
+    var sceneWidth = window.innerWidth;
+    var sceneHeight = window.innerHeight;
 
-        // Sphere 2
-        var b2 = new CANNON.Body({ mass: 5 });
-        b2.addShape(sphereShape);
-        b2.linearDamping = 0;
-        b2.position.set(-5,0,0);
-        b2.velocity.set(5,0,0);
-        world.add(b2);
-        demo.addVisual(b2);
-    });
+    // Create camera and move it a bit further. Make it to look to origo.
+    var camera = new THREE.PerspectiveCamera( 45, sceneWidth / sceneHeight, 1, 500 );
+    camera.position.y = 100;
+    camera.position.z = 100;
+    camera.position.x = 100;
+    camera.lookAt(scene.position);
 
-    // Sphere / box side
-    demo.addScene("Sphere / box side",function(){
-        var world = setupWorld(demo);
+    // Create renderer.
+    var renderer = new THREE.WebGLRenderer({antialias: false});
+    renderer.setSize( sceneWidth, sceneHeight );
+    renderer.autoClear = false;
+    document.body.appendChild(renderer.domElement);
 
-        var boxShape = new CANNON.Box(new CANNON.Vec3(1,1,1));
-        var sphereShape = new CANNON.Sphere(1);
+    // Let there be light!
+    var light = new THREE.DirectionalLight( 0xffffff, 1 );
+    light.position.set( 50, 50, 50 );
+    scene.add(light);
 
-        // Box
-        var b1 = new CANNON.Body({ mass: 5 });
-        b1.addShape(boxShape);
-        b1.position.set(5,0,0);
-        b1.velocity.set(-5,0,0);
-        b1.linearDamping = 0;
-        world.add(b1);
-        demo.addVisual(b1);
+    // And the box.
+    var geometry = new THREE.BoxGeometry( 20, 20, 20 );
+    var material = new THREE.MeshPhongMaterial( {color: 0xcccccc} );
+    var cube = new THREE.Mesh( geometry, material );
+    scene.add( cube );
 
-        // Sphere
-        var b2 = new CANNON.Body({ mass: 5 });
-        b2.addShape(sphereShape);
-        b2.position.set(-5,0,0);
-        b2.velocity.set(30,0,0);
-        b2.linearDamping = 0;
-        world.add(b2);
-        demo.addVisual(b2);
-    });
 
-    demo.addScene("Sphere / box edge",function(){
-        var world = setupWorld(demo);
 
-        var boxShape = new CANNON.Box(new CANNON.Vec3(1,1,1));
-        var sphereShape = new CANNON.Sphere(1);
 
-        // Box
-        var b1 = new CANNON.Body({ mass: 5 });
-        b1.addShape(boxShape);
-        b1.position.set(5,0,0);
-        b1.velocity.set(-5,0,0);
-        b1.linearDamping = 0;
-        var q = new CANNON.Quaternion();
-        q.setFromAxisAngle(new CANNON.Vec3(0,0,1),Math.PI*0.25);
-        b1.quaternion.set(q.x,q.y,q.z,q.w);
-        world.add(b1);
-        demo.addVisual(b1);
+    // Ok, now we have the cube. Next we'll create the hud. For that we'll
+    // need a separate scene which we'll render on top of our 3D scene. We'll
+    // use a dynamic texture to render the HUD.
 
-        // Sphere
-        var b2 = new CANNON.Body({ mass: 5 });
-        b2.addShape(sphereShape);
-        b2.position.set(-5,0,0);
-        b2.velocity.set(5,0,0);
-        b2.linearDamping = 0;
-        world.add(b2);
-        demo.addVisual(b2);
-    });
+    // We will use 2D canvas element to render our HUD.
+    var hudCanvas = document.createElement('canvas');
 
-    demo.addScene("Sphere / box corner",function(){
-        var world = setupWorld(demo);
+    // Again, set dimensions to fit the screen.
+    hudCanvas.width = sceneWidth;
+    hudCanvas.height = sceneHeight;
 
-        var boxShape = new CANNON.Box(new CANNON.Vec3(1,1,1));
-        var sphereShape = new CANNON.Sphere(1);
+    // Get 2D context and draw something supercool.
+    var hudBitmap = hudCanvas.getContext('2d');
+    hudBitmap.font = "Normal 40px Arial";
+    hudBitmap.textAlign = 'center';
+    hudBitmap.fillStyle = "rgba(0,245,245,0.75)";
+    hudBitmap.fillText('Initializing...', sceneWidth / 2, sceneHeight / 2);
 
-        // Box
-        var b1 = new CANNON.Body({ mass: 5 });
-        b1.addShape(boxShape);
-        b1.position.set(5,0,0);
-        b1.velocity.set(0,0,0);
-        b1.linearDamping = 0;
-        world.add(b1);
-        demo.addVisual(b1);
+    // Create the camera and set the viewport to match the screen dimensions.
+    var cameraHUD = new THREE.OrthographicCamera(-sceneWidth/2, sceneWidth/2, sceneHeight/2, -sceneHeight/2, 0, 30 );
 
-        // Sphere
-        var b2 = new CANNON.Body({ mass: 5 });
-        b2.addShape(sphereShape);
-        b2.position.set(-5,1,0);
-        b2.velocity.set(30,0,0);
-        b2.linearDamping = 0;
-        world.add(b2);
-        demo.addVisual(b2);
-        console.log(b1);
-        b1.addEventListener("collide", function (e) {
-            console.log(b1)
-        });
-    });
+    // Create also a custom scene for HUD.
+    sceneHUD = new THREE.Scene();
 
-    demo.start();
+    // Create texture from rendered graphics.
+    var hudTexture = new THREE.Texture(hudCanvas)
+    hudTexture.needsUpdate = true;
 
-    function setupWorld(demo){
-        // Create world
-        var world = demo.getWorld();
-        world.gravity.set(0,0,0); // no gravity
-        world.broadphase = new CANNON.NaiveBroadphase();
-        world.solver.iterations = 5;
-        world.defaultContactMaterial.contactEquationStiffness = 1e6;
-        world.defaultContactMaterial.contactEquationRelaxation = 10;
-        return world;
-    }
+    // Create HUD material.
+    var material = new THREE.MeshBasicMaterial( {map: hudTexture} );
+    material.transparent = true;
+
+    // Create plane to render the HUD. This plane fill the whole screen.
+    var planeGeometry = new THREE.PlaneGeometry( sceneWidth, sceneHeight );
+    var plane = new THREE.Mesh( planeGeometry, material );
+    sceneHUD.add( plane );
+
+
+
+
+    // Now we have two scenes. Only thing we need now is a render loop!
+    function animate() {
+
+        // Rotate cube.
+        cube.rotation.x += 0.01;
+        cube.rotation.y -= 0.01;
+        cube.rotation.z += 0.03;
+
+        // Update HUD graphics.
+        hudBitmap.clearRect(0, 0, sceneWidth, sceneHeight);
+        hudBitmap.fillText("RAD [x:"+(cube.rotation.x % (2 * Math.PI)).toFixed(1)+", y:"+(cube.rotation.y % (2 * Math.PI)).toFixed(1)+", z:"+(cube.rotation.z % (2 * Math.PI)).toFixed(1)+"]" , sceneWidth / 2, sceneHeight / 2);
+        hudTexture.needsUpdate = true;
+
+        // Render scene.
+        renderer.render(scene, camera);
+
+        // Render HUD on top of the scene.
+        renderer.render(sceneHUD, cameraHUD);
+
+        // Request new frame.
+        requestAnimationFrame(animate);
+
+    };
+
+    // Start animation.
+    animate();
+
 
 </script>
 </body>
