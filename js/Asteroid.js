@@ -1,9 +1,13 @@
 class Asteroid {
 
     static modelsLoaded = false;
+    static asteroidsPassed = 0;
     static models = [];
 
-    constructor(index, speed, x, y, z) {
+    static setFrequency(frequency){
+        this.frequency = frequency;
+    }
+    constructor(index, speed, x, y, z,) {
         this.index = index;
         this.model = Asteroid.models[index].clone();
         this.speed = speed;
@@ -42,6 +46,24 @@ class Asteroid {
                         });
                 });
         });
+    }
+
+    static updateAsteroids(asteroids, frameNumber){
+        asteroids.forEach(asteroid => {
+            asteroid.model.position.copy(casteroids[asteroids.indexOf(asteroid)].position);
+            asteroid.doRotate();
+            if (asteroid.model.position.z > 10) {
+                cworld.remove(casteroids[asteroids.indexOf(asteroid)]);
+                casteroids.splice(asteroids.indexOf(asteroid), 1);
+                scene.remove(lspheres[asteroids.indexOf(asteroid)]);
+                asteroids.splice(asteroids.indexOf(asteroid), 1);
+                scene.remove(asteroid.model);
+                this.asteroidsPassed += 1;
+            }
+        });
+        if (asteroids.length >= 0 && frameNumber % this.frequency == 0 && asteroidsLoaded && this.asteroidsPassed < 1500) {
+            return true;
+        }
     }
 
 }

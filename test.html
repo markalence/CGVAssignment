@@ -120,9 +120,8 @@
         mercury.rotation.y += 0.001;
         mercury.z += 0.5;
         mars.rotation.y -= 0.003;
-        if(Asteroid.updateAsteroids(asteroids,frameNumber) && Asteroid.asteroidsPassed < 1500){
-            addAsteroids(-200);
-            console.log(Asteroid.asteroidsPassed)
+        if(Asteroid.updateAsteroids(asteroids,frameNumber)){
+            addAsteroids(-200)
         }
     }
 
@@ -166,12 +165,6 @@
         if (spaceShipLoaded) {
             keyHandler.handleKeys();
             updateAsteroids();
-            if(Asteroid.asteroidsPassed >= 1500){
-                // TODO: YOU WIN!!! Your menu here
-            }
-            if(HEALTH == 0){
-                //TODO: YOU LOSE!!! Your menu here
-            }
             cworld.step(1 / 60);
             updateLighting(spaceship.spaceship);
             spaceship.updateSpaceship(bbox);
@@ -356,7 +349,6 @@
 
 
     function createScene() {
-        Asteroid.setFrequency(3);
         THREEx.FullScreen.bindKey({charCode: 'm'.charCodeAt(0)});
         sceneWidth = window.innerWidth;
         sceneHeight = window.innerHeight;
