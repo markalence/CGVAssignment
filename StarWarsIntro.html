@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="styling.css">
+    <title>Star Wars Intro</title>
+</head>
+
+<body>
+
+<script>
+    const numStars = 100;
+
+    // For every star we want to display
+    for (let i = 0; i < numStars; i++) {
+        let star = document.createElement("div");
+        star.className = "star";
+        var xy = getRandomPosition();
+        star.style.top = xy[0] + 'px';
+        star.style.left = xy[1] + 'px';
+        document.body.append(star);
+    }
+
+    // Gets random x, y values using the size of the screen
+    function getRandomPosition() {
+        var y = window.innerWidth;
+        var x= window.innerHeight;
+        var randomX = Math.floor(Math.random()*x);
+        var randomY = Math.floor(Math.random()*y);
+        return [randomX,randomY];
+    }
+
+    //Changes the current HTML file to the game HTML file
+    function change_page() {
+        window.location.href = "index.html";
+    }
+
+    //Calls the change_page function after the duration of the intro cinematic
+    setTimeout(change_page, 65000);
+</script>
+
+<!-- Plays the Star Wars theme automatically -->
+<embed src="sounds/StarWarsIntro.mp3" autostart="true">
+
+<!-- Displays the introduction text for the cinematic -->
+<section class="intro">
+    A long time ago, in a galaxy far,<br> far away...
+</section>
+
+<!--The following section creates the "Space Evaders" SVG image that is used in the opening cinematic -->
+<section class="logo">
+    <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg"  x="0px" y="0px" width="379px" height="142px" viewBox="0 0 379 142" enable-background="new 0 0 379 142" xml:space="preserve">
+        <image id="image0" width="379" height="142" x="0" y="0" href="data:image/png;base64,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
+41jGQwAAAABJRU5ErkJggg==" />
+</svg>
+</section>
+
+<!-- Creates the segment that displays all the text for the story of the intro cinematic -->
+<div id="board">
+    <div id="content">
+        <p id="title">Episode e</p>
+        <p id="subtitle">THE LAST CRUMBED CHICKEN WRAP</p>
+        <br>
+        <p>Turmoil has engulfed the University of Witwatersrand as Emperor Pravesh naps at his computer and accidentally opens an inter-dimensional portal
+            by running an infinite loop on Moodle</p>
+        <p>Steve,Terence and Hima have been transported to another dimension in which they have to teach 1st years forever...</p>
+        <p>Jedi Master Benji consults Elon Musk and together they use reinforcement learning to train robots to create a spaceship for a daring rescue mission</p>
+        <p>It is up to General Richard and his team of tutors to navigate their way through space and various asteroid belts
+            in order to bring them back safely so
+            they may purchase the Last Crumbed Chicken Wrap from Zesties</p>
+    </div>
+</div>
+
+</body>
+</html>
