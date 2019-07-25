@@ -24,7 +24,6 @@
 <div id="TutContainer"></div>
 
 
-
 <script>
     var sceneWidth;
     var sceneHeight;
@@ -58,15 +57,18 @@
     var HEALTH = 100;
     var lspheres = [];
     keyState = {};
+    var win = false;
     var keyHandler;
+    var pause = false;
+    var lose = new Audio('sounds/lose.mp3');
     clock = new THREE.Clock();
 
     //Sets up the FPS monitoring
     var stats = new Stats();
-    stats.domElement.style.position   = 'absolute';
-    stats.domElement.style.left  = '0px';
-    stats.domElement.style.top    = '0px';
-    document.body.appendChild( stats.domElement );
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.left = '0px';
+    stats.domElement.style.top = '0px';
+    document.body.appendChild(stats.domElement);
 
 
     function isValidPosition(i) {
@@ -82,12 +84,15 @@
     }
 
     function updateHUD() {
-       hud.clearHUD(HEALTH);
-       if(!spaceShipLoaded){return;}
-       hud.fillHUD(asteroids,spaceship.spaceship,keyHandler);
+        hud.clearHUD(HEALTH);
+        if (!spaceShipLoaded) {
+            return;
+        }
+        hud.fillHUD(asteroids, spaceship.spaceship, keyHandler);
     }
 
     function render() {
+        requestAnimationFrame(GameLoop);
         updateHUD();
         hud.hudTexture.needsUpdate = true;
         particleGroup.tick(clock.getDelta());
@@ -101,6 +106,7 @@
         return v;
     }
 
+    //add an asteroid to scene at the specified z value
     function addAsteroids(z) {
         if (!asteroidsLoaded) {
             return;
@@ -116,7 +122,7 @@
             });
             body.addShape(shape);
             body.position.copy(asteroid.model.position);
-            body.velocity.set(0, 0, 30 + Math.random()*25);
+            body.velocity.set(0, 0, 30 + Math.random() * 25);
             cworld.add(body);
             casteroids.push(body);
         }
@@ -126,11 +132,13 @@
         mercury.rotation.y += 0.001;
         mercury.z += 0.5;
         mars.rotation.y -= 0.003;
-        if(Asteroid.updateAsteroids(asteroids,frameNumber) && Asteroid.asteroidsPassed < 1500){
+        if (Asteroid.updateAsteroids(asteroids, frameNumber) && Asteroid.asteroidsPassed < 1500) {
             addAsteroids(-200);
             console.log(Asteroid.asteroidsPassed)
         }
     }
+
+    //update the position of the light to match position of spaceship
 
     function updateLighting(spaceship) {
         spotLight.position.set(spaceship.position.x, spaceship.position.y, -0.5);
@@ -142,11 +150,12 @@
         spaceship.add(spotLight.target);
     }
 
+    //move camera with spaceship
     function updatePerspective(spaceship) {
         if (keyHandler.keyState[86] !== false) {
             camera.position.x = spaceship.position.x;
-            camera.position.y = spaceship.position.y+1;
-            camera.position.z = spaceship.position.z+3;
+            camera.position.y = spaceship.position.y + 1;
+            camera.position.z = spaceship.position.z + 3;
             camera.lookAt(spaceship.position.x, spaceship.position.y, spaceship.position.z);
         } else {
             camera.position.set(spaceship.position.x, spaceship.position.y, spaceship.position.z - 0.5);
@@ -157,19 +166,37 @@
 
 
     function update() {
+        if (pause) {
+            ambience.pause();
+            return
+        }
+        if(win){
+            levelCleared.style.visibility = "visible";  //continue to next level
+            if(keyHandler.keyState[13]){
+                window.location.href = "Level2.html";
+            }
+            return;
+        }
+        if(HEALTH == 0){
+
+            //you lose
+            dead.style.visibility = "visible";
+            metalRattle.pause();
+            lose.play();
+            if(keyHandler.keyState[13]) {
+                window.location.href = "index.html";
+            }
+            return;
+        }
         frameNumber++;
 
 
         if (spaceShipLoaded) {
             keyHandler.handleKeys();
             updateAsteroids();
-            if(Asteroid.asteroidsPassed >= 1000){
-                training.style.visibility = "visible";
-                window.location.href = "Level2.html";
-            }
-            if(HEALTH === 0){
-                training.style.visibility = "visible";
-                window.location.href = "Level2.html";
+            if (Asteroid.asteroidsPassed >= 1000 && asteroids.length == 0) {
+                //if all asteroids passed, you win
+                win = true;
             }
 
 
@@ -182,6 +209,7 @@
         }
     }
 
+    //load models of mercury, mars, and spaceship
     function loadModels() {
         new THREE.MTLLoader()
             .setPath('models/spaceship/')
@@ -192,14 +220,16 @@
                     .setPath('models/spaceship/')
                     .load('GHAANON_R1.obj', function (object) {
                         object.scale.set(0.1, 0.1, 0.05);
+                        object.meme = false;
                         spaceship = new Spaceship(object);
+                        spaceship.meme = false;
                         spaceShipLoaded = true;
                         keyHandler = new KeyHandler(spaceship.spaceship);
                         cworld.add(spaceship.bbox);
                         scene.add(spaceship.spaceship);
                         addEventListeners(spaceship.spaceship);
                     });
-                    });
+            });
 
         new THREE.MTLLoader()
             .setPath('models/mercury/')
@@ -238,17 +268,16 @@
 
     function onWindowResize() {
         //Is function executes when a resize is detected. It retrieves the current screen size and updates the projection
-        window.addEventListener('resize',function(){
+        window.addEventListener('resize', function () {
             var width = window.innerWidth;
             var height = window.innerHeight;
             renderer.setSize(width, height);
-            camera.aspect = width/height;
+            camera.aspect = width / height;
             camera.updateProjectionMatrix();
         });
     }
 
     function GameLoop() {
-        requestAnimationFrame(GameLoop);
         stats.update();
         update();
         render();
@@ -258,12 +287,13 @@
             }
         }
     }
+
     createScene();
     initParticles();
     GameLoop();
 
     function skyBox() {
-        skybox = new Skybox();
+        skybox = new Skybox('skyboxes/skybox2');
         scene.add(skybox);
     }
 
@@ -285,7 +315,7 @@
         scene.add(spotLight);
     }
 
-    //
+    // initialise particle emmitter
     function initParticles() {
         particleGroup = new SPE.Group({
             blending: THREE.NormalBlending,
@@ -337,6 +367,12 @@
 
     function addEventListeners(spaceship) {
         window.addEventListener('keydown', function (e) {
+            if (e.which == 27) {
+                pause = !pause;
+                if (!pause) {
+                    ambience.play()
+                }
+            }
             if (e.which === 86) {
                 keyHandler.keyState[e.which] = !keyHandler.keyState[e.which];
                 if (keyHandler.keyState[e.which] === false) {
@@ -358,6 +394,7 @@
     }
 
 
+    //initialising scene
     function createScene() {
         Asteroid.setFrequency(3);
         THREEx.FullScreen.bindKey({charCode: 'm'.charCodeAt(0)});
@@ -385,7 +422,7 @@
 
     function createHUD() {
         hudCanvas = document.createElement('canvas');
-        hud = new HUD(hudCanvas,sceneWidth,sceneHeight);
+        hud = new HUD(hudCanvas, sceneWidth, sceneHeight);
         cameraHUD = new THREE.OrthographicCamera(-sceneWidth / 2, sceneWidth / 2, sceneHeight / 2, -sceneHeight / 2, 0, 30);
         sceneHUD.add(hud.plane);
     }
@@ -403,7 +440,7 @@
 <!-- The following script includes the menu html file in the current game html file -->
 <script>
     sessionStorage.setItem('LevelNumber', '1');
-    $(function(){
+    $(function () {
         $("#includedContent").load("menu.html");
     });
 </script>

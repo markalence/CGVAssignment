@@ -5,6 +5,7 @@ class KeyHandler {
         this.keyState = {};
     }
 
+    // handle up, down, left, right keys
     handleKeys() {
         if (this.keyState[39]) {
             if (this.spaceship.position.x < 15) {

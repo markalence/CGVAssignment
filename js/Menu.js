@@ -43,6 +43,7 @@ function onDocumentKeyDown(event) {
 
 //Hides the main menu when 'Resume' is selected in the main menu
 function minimize() {
+
     menu.style.visibility = "hidden";
     logo.style.visibility = "hidden";
 }
@@ -61,7 +62,7 @@ function restartLevel() {
         window.location.href = "Level3.html";
     }
     if(levelNum === "4"){
-        window.location.href = "Level4.html";
+        window.location.href = "meme.html";
     }
 }
 
@@ -79,7 +80,7 @@ function changeLevelMenu(x) {
         window.location.href = "Level3.html";
     }
     if(x === 4){
-        window.location.href = "Level4.html";
+        window.location.href = "meme.html";
     }
 
 }
