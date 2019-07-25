@@ -1,0 +1,213 @@
+/*Describes the paragraph when clearing a level*/
+#levelCleared {
+    position:absolute;
+
+    top: 30%;
+    left: 38%;
+
+    font-size: 500%;
+    color:#ffd700;
+    z-index: 1000;
+}
+/*Describes the paragraph when player runs out of health*/
+#dead {
+    font-size: 500%;
+    color:red;
+
+    position:absolute;
+
+    top: 30%;
+    left: 38%;
+
+    z-index: 1000;
+}
+
+/*Describes paragraph when the 4th level is cleared*/
+#end {
+    font-size: 500%;
+    color:#87ceeb;
+
+    text-align: center;
+
+    position:absolute;
+
+    top: 30%;
+    left: 20%;
+
+    z-index: 1000;
+}
+
+/*Describes paragraph in the 1st level*/
+#training {
+    font-size: 500%;
+    color:lightgreen;
+
+    position:absolute;
+
+    top: 30%;
+    left: 36%;
+
+    z-index: 1000;
+}
+
+/*Details of logo*/
+.logo{
+    position:absolute;
+
+    top: 18%;
+    left: 38.5%;
+
+    width: 16.5%;
+    height: auto;
+    z-index: 1000;
+}
+
+/*Creates the main menu size and border*/
+#MainMenu {
+    position:absolute;
+
+    top: 15%;
+    left: 35%;
+
+    border-color: #1C6EA4;
+    border-style: ridge;
+    border-width: 0.25vw;
+    border-radius: 25px 25px 25px 25px;
+
+
+    height: 72.6vh;
+    width: 33.3vw;
+
+    z-index: 1000;
+}
+
+/*Lays out the unordered list segment of the main menu*/
+#MainMenu ul {
+    margin-top: 40%;
+    margin-left: -1.5%;
+
+    list-style:none;
+    display:block;
+
+    margin-bottom: 8%;
+
+    text-align: center;
+    z-index: 1000;
+}
+
+/*Describes the properties of each element of the unordered list*/
+#MainMenu ul li {
+    padding:2% 2% 2% 2%;
+    width: 90%;
+    height: auto;
+    background-color:#1C6EA4;
+
+    border-radius:10px;
+    margin-bottom: 8%;
+    z-index: 1000;
+}
+
+/*Describes the content of each element*/
+#MainMenu ul li a {
+    display:block;
+    text-decoration:none;
+    color: #ffffff;
+    z-index: 1000;
+}
+
+/*Properties of the element when the mouse is hovering over it*/
+#MainMenu ul li:hover {
+    background-color: #ffd700;
+    z-index: 1000;
+}
+
+/*Creates the options menu size and border*/
+#OptionsMenu {
+    position:absolute;
+    top: 15%;
+    left: 35%;
+    border-color: #1C6EA4;
+    border-style: ridge;
+    border-width: 0.25vw;
+    border-radius: 25px 25px 25px 25px;
+    height: 72.6vh;
+    width: 33.3vw;
+}
+
+/*Lays out the unordered list segment of the options menu*/
+#OptionsMenu ul {
+    margin-top: 40%;
+    margin-left: -1.5%;
+    list-style:none;
+    display:block;
+    text-align: center;
+}
+
+/*Describes the properties of each element of the unordered list*/
+#OptionsMenu ul li {
+    width: 90%;
+    height: auto;
+    padding:2% 2% 2% 2%;
+    background-color:#1C6EA4;
+    border-radius:10px;
+    margin-bottom: 8%;
+}
+
+/*Describes the content of each element*/
+#OptionsMenu ul li a {
+    display:block;
+    text-decoration:none;
+    color:#ffffff;
+}
+
+/*Properties of the element when the mouse is hovering over it*/
+#OptionsMenu ul li:hover {
+    background-color: #ffd700;
+}
+
+/*Creates the level menu size and border*/
+#ChangeLevelMenu {
+    position:absolute;
+
+    top: 15%;
+    left: 35%;
+
+    border-color: #1C6EA4;
+    border-style: ridge;
+    border-width: 0.25vw;
+    border-radius: 25px 25px 25px 25px;
+    height: 72.6vh;
+    width: 33.3vw;
+}
+
+/*Lays out the unordered list segment of the level menu*/
+#ChangeLevelMenu ul {
+    margin-top: 40%;
+    margin-left: -1.5%;
+
+    list-style:none;
+    display:block;
+    text-align: center;
+}
+
+/*Describes the properties of each element of the unordered list*/
+#ChangeLevelMenu ul li {
+    width: 90%;
+    height: auto;
+    padding:2% 2% 2% 2%;
+    background-color:#1C6EA4;
+    border-radius:10px;
+    margin-bottom: 4%;
+}
+
+/*Describes the content of each element*/
+#ChangeLevelMenu ul li a {
+    display:block;
+    text-decoration:none;
+    color:#ffffff;
+}
+
+/*Properties of the element when the mouse is hovering over it*/
+#ChangeLevelMenu ul li:hover {
+    background-color: #ffd700;
+}
